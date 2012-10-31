@@ -62,13 +62,23 @@ var createView = function(map) {
         $("#score").hide().html(totalScore).fadeIn();
     };
 
+    that.showOffByInMeters = function(offByInMeters) {
+        $("#offByInMeters").html(offByInMeters);
+        $("#offBy").show().fadeOut(1000);
+    };
+
     return that;
 };
 
 var view = createView(map);
 
 
-var scoreForClick = function(coord) {
+var scoreForClick = function(offByInMeters) {
+    return Math.max(Math.round(1000 - offByInMeters), 0);
+
+};
+
+var getOffByInMeters = function(coord) {
     var lat1, lat2, lon1, lon2;
 
     lat1 = coord.latitude;
@@ -88,21 +98,26 @@ var scoreForClick = function(coord) {
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     var d = R * c;
 
-    return Math.max(Math.round(100 - 70 * d), 0);
+
+    return Math.round(d*1000);
 
 };
 
 var handleMapClick = function(coord) {
-    var thisScore = scoreForClick(coord);
+    var offByInMeters = getOffByInMeters(coord);
+    view.showOffByInMeters(offByInMeters);
+    var thisScore = scoreForClick(offByInMeters);
     if (thisScore > 0) {
         score = score + thisScore;
         view.showTotalScore(score);
     }
 
     view.displayPlaceMarker(currentItem.position);
+    setTimeout(function() {
+        currentItem = items[items.indexOf(currentItem) + 1];
+        $("#name").hide().html(currentItem.title).fadeIn();
 
-    currentItem = items[items.indexOf(currentItem) + 1];
-    $("#name").hide().html(currentItem.title).fadeIn();
+    }, 1000);
 
 };
 
