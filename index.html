@@ -13,9 +13,8 @@ Where is <div id="name"></div>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.8.2.min.js"><\/script>')</script>
 
-<script src="http://api.maps.nokia.com/mobile/0.2.0/lib/mh5.js"></script>
+<script src="http://api.maps.nokia.com/2.2.3/jsl.js" type="text/javascript" charset="utf-8"></script>
 <script>
-
 if (typeof Number.prototype.toRad == 'undefined') {
   Number.prototype.toRad = function() {
     return this * Math.PI / 180;
@@ -29,58 +28,53 @@ if (typeof Number.prototype.toRad == 'undefined') {
 
   var items = [];
 
-    $.getJSON('http://demo.places.nlp.nokia.com/places/v1/discover/explore?at='+mapCenter.latitude+'%2C'+mapCenter.longitude+'&tf=plain&pretty=y&size=5&app_id=demo_qCG24t50dHOwrLQ&app_code=NYKC67ShPhQwqaydGIW4yg', function(data) {
+  var currentItem;
+
+    $.getJSON('http://demo.places.nlp.nokia.com/places/v1/discover/explore?at='+mapCenter.latitude+'%2C'+mapCenter.longitude+'&tf=plain&pretty=y&size=50&app_id=demo_qCG24t50dHOwrLQ&app_code=NYKC67ShPhQwqaydGIW4yg', function(data) {
 
   $.each(data.results.items, function(index, val) {
     if (val.type == "urn:nlp-types:place")
     items.push(val);
   });
 
-   $("#name").html(items[0].title);
+    currentItem = items[0];
+
+   $("#name").html(currentItem.title);
 
 });
 
-    nokia.mh5.assetsPath = "http://api.maps.nokia.com/mobile/0.2.0/lib/";
-    nokia.mh5.appId = "_peU-uCkp-j8ovkzFGNU";
-    nokia.mh5.appCode = "gBoUkAMoxoqIWfxWA5DuMQ";
 
 
-  var poi = {
-          name: "Nokia House Berlin",
-          description: "116 Invalidenstrasse, 101101 Berlin",
-          more: "where maps are made",
-          ratingValue: 4.5
-      };
+nokia.Settings.set( "appId", "_peU-uCkp-j8ovkzFGNU"); 
+nokia.Settings.set( "authenticationToken", "gBoUkAMoxoqIWfxWA5DuMQ");
 
-    var map = new nokia.mh5.components.Map({
-        center: {
-            longitude: 13.3896145,
-            latitude: 52.5166648
-        },
-        zoom: 12,
-        schema: "normal.day",
-        positionButton: false,
-        settingsButton: false,
+// Get the DOM node to which we will append the map
+var mapContainer = document.getElementById("mapContainer");
+// Create a map inside the map container DOM node
+var map = new nokia.maps.map.Display(mapContainer, {
+	// Initial center and zoom level of the map
+	center: [mapCenter.latitude, mapCenter.longitude],
+	zoomLevel: 12,
+	// We add the behavior component to allow panning / zooming of the map
+	components:[]
+});
 
-        tracking: false,
-        listeners: {
-            poiclick: function(e) {/*your listener*/},
-            mapmovestart: function() {/*your listener*/},
-            mapmoveend: function() {/*your listener*/},
-            mapclick: function(e) { 
 
-            var score,lat1,lat2,lon1,lon2;
+    var handleMapClick = function(coord) {
+           var score,lat1,lat2,lon1,lon2;
 
-            lat1 = items[0].position[0];
-            lon1 = items[0].position[1];
-            lat2 = e.data.latitude;
-            lon2 = e.data.longitude;
+            lat1 = coord.latitude;
+            lon1 = coord.longitude;
+            lat2 = currentItem.position[0];
+            lon2 = currentItem.position[1];
             
             var R = 6371; // km
             var dLat = (lat2-lat1).toRad();
             var dLon = (lon2-lon1).toRad();
             lat1 = lat1.toRad();
             lat2 = lat2.toRad();
+
+
 
             var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
             Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
@@ -90,16 +84,30 @@ if (typeof Number.prototype.toRad == 'undefined') {
             score = Math.max(Math.round(100 - 70*d), 0);
             
             $("#score").html(score);
-            },
-            mapdblclick: function(e) {/*your listener*/},
-            maplongpress: function(e) {/*your listener*/},
-            maptrackingstart: function() {/*your listener*/},
-            maptrackingend: function() {/*your listener*/},
-            mapzoomchange: function(e) {/*your listener*/}
-        }
-    });
-    
-    document.getElementById("mapContainer").appendChild(map.root);
+
+            var standardMarker = new nokia.maps.map.StandardMarker(currentItem.position);
+            map.objects.add(standardMarker);
+            
+            currentItem = items[items.indexOf(currentItem) +1];
+            $("#name").html(currentItem.title);
+            }
+
+
+
+var TOUCH = nokia.maps.dom.Page.browser.touch,
+	CLICK = TOUCH ? "tap" : "click";
+
+/* Attach an event listener to map display
+ * push info bubble with coordinate information to map
+ */
+map.addListener(CLICK, function (evt) {
+	var coord = map.pixelToGeo(evt.displayX, evt.displayY);
+	handleMapClick(coord);
+
+});
+
+
+
 
 </script>
 </body>
