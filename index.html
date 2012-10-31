@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,
+            maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="http://api.maps.nokia.com/mobile/0.2.0/lib/mh5.css">
+    <link rel="stylesheet" href="http://api.maps.nokia.com/mobile/0.2.0/lib/colors.css">
+</head>
+<body>
+Where is <div id="name"></div>
+<div id="mapContainer" style="height: 480px; width: 640px;"></div>
+<div id="score"></div>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.8.2.min.js"><\/script>')</script>
+
+<script src="http://api.maps.nokia.com/mobile/0.2.0/lib/mh5.js"></script>
+<script>
+
+if (typeof Number.prototype.toRad == 'undefined') {
+  Number.prototype.toRad = function() {
+    return this * Math.PI / 180;
+  }
+}
+
+    var mapCenter = {
+            longitude: 13.3896145,
+            latitude: 52.5166648
+        };
+
+  var items = [];
+
+    $.getJSON('http://demo.places.nlp.nokia.com/places/v1/discover/explore?at='+mapCenter.latitude+'%2C'+mapCenter.longitude+'&tf=plain&pretty=y&size=5&app_id=demo_qCG24t50dHOwrLQ&app_code=NYKC67ShPhQwqaydGIW4yg', function(data) {
+
+  $.each(data.results.items, function(index, val) {
+    if (val.type == "urn:nlp-types:place")
+    items.push(val);
+  });
+
+   $("#name").html(items[0].title);
+
+});
+
+    nokia.mh5.assetsPath = "http://api.maps.nokia.com/mobile/0.2.0/lib/";
+    nokia.mh5.appId = "_peU-uCkp-j8ovkzFGNU";
+    nokia.mh5.appCode = "gBoUkAMoxoqIWfxWA5DuMQ";
+
+
+  var poi = {
+          name: "Nokia House Berlin",
+          description: "116 Invalidenstrasse, 101101 Berlin",
+          more: "where maps are made",
+          ratingValue: 4.5
+      };
+
+    var map = new nokia.mh5.components.Map({
+        center: {
+            longitude: 13.3896145,
+            latitude: 52.5166648
+        },
+        zoom: 12,
+        schema: "normal.day",
+        positionButton: false,
+        settingsButton: false,
+
+        tracking: false,
+        listeners: {
+            poiclick: function(e) {/*your listener*/},
+            mapmovestart: function() {/*your listener*/},
+            mapmoveend: function() {/*your listener*/},
+            mapclick: function(e) { 
+
+            var score,lat1,lat2,lon1,lon2;
+
+            lat1 = items[0].position[0];
+            lon1 = items[0].position[1];
+            lat2 = e.data.latitude;
+            lon2 = e.data.longitude;
+            
+            var R = 6371; // km
+            var dLat = (lat2-lat1).toRad();
+            var dLon = (lon2-lon1).toRad();
+            lat1 = lat1.toRad();
+            lat2 = lat2.toRad();
+
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            var d = R * c;
+
+            score = Math.max(Math.round(100 - 70*d), 0);
+            
+            $("#score").html(score);
+            },
+            mapdblclick: function(e) {/*your listener*/},
+            maplongpress: function(e) {/*your listener*/},
+            maptrackingstart: function() {/*your listener*/},
+            maptrackingend: function() {/*your listener*/},
+            mapzoomchange: function(e) {/*your listener*/}
+        }
+    });
+    
+    document.getElementById("mapContainer").appendChild(map.root);
+
+</script>
+</body>
