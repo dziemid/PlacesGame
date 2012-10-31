@@ -74,7 +74,7 @@ var view = createView(map);
 
 
 var scoreForClick = function(offByInMeters) {
-    return Math.max(Math.round(1000 - offByInMeters), 0);
+    return Math.max(Math.round(1500 - offByInMeters), 0);
 
 };
 
