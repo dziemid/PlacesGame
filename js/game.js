@@ -12,34 +12,93 @@ var mapCenter = {
     latitude: 52.5166648
 };
 
-var score = 0;
-var items = [];
-
-var currentItem;
 var mapContainer = document.getElementById("mapContainer");
+
 var map = new nokia.maps.map.Display(mapContainer, {
     center: [mapCenter.latitude, mapCenter.longitude],
     zoomLevel: 12,
     components:[]
 });
 
+var createGame = function(items) {
+    var that, currentItem, score;
+    that = {};
+    score = 0;
+    currentItem = items[0];
+    $("#name").html(currentItem.title);
+
+
+    that.usersClicks = function(coord) {
+        var offByInMeters = getOffByInMeters(coord);
+        view.showOffByInMeters(offByInMeters);
+        var thisScore = scoreForClick(offByInMeters);
+        if (thisScore > 0) {
+            score = score + thisScore;
+            view.showTotalScore(score);
+        }
+
+        view.displayPlaceMarker(currentItem.position);
+        setTimeout(function() {
+            currentItem = items[items.indexOf(currentItem) + 1];
+            $("#name").hide().html(currentItem.title).fadeIn();
+
+        }, 1000);
+    };
+
+
+
+    var scoreForClick = function(offByInMeters) {
+        return Math.max(Math.round(1500 - offByInMeters), 0);
+
+    };
+
+    var getOffByInMeters = function(coord) {
+        var lat1, lat2, lon1, lon2;
+
+        lat1 = coord.latitude;
+        lon1 = coord.longitude;
+        lat2 = currentItem.position[0];
+        lon2 = currentItem.position[1];
+
+        var R = 6371; // km
+        var dLat = (lat2 - lat1).toRad();
+        var dLon = (lon2 - lon1).toRad();
+        lat1 = lat1.toRad();
+        lat2 = lat2.toRad();
+
+
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var d = R * c;
+
+
+        return Math.round(d*1000);
+
+    };
+
+    return that;
+}
+
+var game;
+
 
 $.getJSON('http://demo.places.nlp.nokia.com/places/v1/discover/explore?cat=landmark-attraction&at=' + mapCenter.latitude + '%2C' + mapCenter.longitude + '&tf=plain&pretty=y&size=50&app_id=demo_qCG24t50dHOwrLQ&app_code=NYKC67ShPhQwqaydGIW4yg', function(data) {
+
+    var items = [];
 
     $.each(data.results.items, function(index, val) {
         if (val.type == "urn:nlp-types:place")
             items.push(val);
     });
 
-    currentItem = items[0];
-    $("#name").html(currentItem.title);
-
+    game = createGame(items);
 
     var TOUCH = nokia.maps.dom.Page.browser.touch, CLICK = TOUCH ? "tap" : "click";
 
     map.addListener(CLICK, function (evt) {
         var coord = map.pixelToGeo(evt.displayX, evt.displayY);
-        handleMapClick(coord);
+        game.usersClicks(coord);
 
     });
 
@@ -72,52 +131,4 @@ var createView = function(map) {
 
 var view = createView(map);
 
-
-var scoreForClick = function(offByInMeters) {
-    return Math.max(Math.round(1500 - offByInMeters), 0);
-
-};
-
-var getOffByInMeters = function(coord) {
-    var lat1, lat2, lon1, lon2;
-
-    lat1 = coord.latitude;
-    lon1 = coord.longitude;
-    lat2 = currentItem.position[0];
-    lon2 = currentItem.position[1];
-
-    var R = 6371; // km
-    var dLat = (lat2 - lat1).toRad();
-    var dLon = (lon2 - lon1).toRad();
-    lat1 = lat1.toRad();
-    lat2 = lat2.toRad();
-
-
-    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c;
-
-
-    return Math.round(d*1000);
-
-};
-
-var handleMapClick = function(coord) {
-    var offByInMeters = getOffByInMeters(coord);
-    view.showOffByInMeters(offByInMeters);
-    var thisScore = scoreForClick(offByInMeters);
-    if (thisScore > 0) {
-        score = score + thisScore;
-        view.showTotalScore(score);
-    }
-
-    view.displayPlaceMarker(currentItem.position);
-    setTimeout(function() {
-        currentItem = items[items.indexOf(currentItem) + 1];
-        $("#name").hide().html(currentItem.title).fadeIn();
-
-    }, 1000);
-
-};
 
