@@ -20,12 +20,54 @@ var map = new nokia.maps.map.Display(mapContainer, {
     components:[]
 });
 
-var createGame = function(items) {
+var createView = function(map) {
+    var that = {};
+
+    that.displayPlaceMarker = function(position) {
+        var standardMarker = new nokia.maps.map.StandardMarker(position);
+        map.objects.add(standardMarker);
+
+        setTimeout(function() {
+            map.objects.remove(standardMarker);
+        }, 1000);
+
+    };
+
+    that.showCurrentItem =function(item) {
+        $("#name").hide().html(item.title).fadeIn();
+    }
+
+    that.showTotalScore = function(totalScore) {
+        $("#score").hide().html(totalScore).fadeIn();
+    };
+
+    that.showOffByInMeters = function(offByInMeters) {
+        $("#offByInMeters").html(offByInMeters);
+        $("#offBy").show().fadeOut(1000);
+    };
+
+    return that;
+};
+
+var view = createView(map);
+
+
+var createGame = function(items, view) {
     var that, currentItem, score;
     that = {};
     score = 0;
-    currentItem = items[0];
-    $("#name").html(currentItem.title);
+
+    that.startGame = function() {
+        currentItem = items[0];
+        view.showCurrentItem(currentItem);
+        var TOUCH = nokia.maps.dom.Page.browser.touch, CLICK = TOUCH ? "tap" : "click";
+
+        map.addListener(CLICK, function (evt) {
+            var coord = map.pixelToGeo(evt.displayX, evt.displayY);
+            that.usersClicks(coord);
+
+        });
+    }
 
 
     that.usersClicks = function(coord) {
@@ -40,7 +82,7 @@ var createGame = function(items) {
         view.displayPlaceMarker(currentItem.position);
         setTimeout(function() {
             currentItem = items[items.indexOf(currentItem) + 1];
-            $("#name").hide().html(currentItem.title).fadeIn();
+            view.showCurrentItem(currentItem);
 
         }, 1000);
     };
@@ -92,43 +134,10 @@ $.getJSON('http://demo.places.nlp.nokia.com/places/v1/discover/explore?cat=landm
             items.push(val);
     });
 
-    game = createGame(items);
-
-    var TOUCH = nokia.maps.dom.Page.browser.touch, CLICK = TOUCH ? "tap" : "click";
-
-    map.addListener(CLICK, function (evt) {
-        var coord = map.pixelToGeo(evt.displayX, evt.displayY);
-        game.usersClicks(coord);
-
-    });
+    game = createGame(items, view);
+    game.startGame();
 
 });
 
-var createView = function(map) {
-    var that = {};
-
-    that.displayPlaceMarker = function(position) {
-        var standardMarker = new nokia.maps.map.StandardMarker(position);
-        map.objects.add(standardMarker);
-
-        setTimeout(function() {
-            map.objects.remove(standardMarker);
-        }, 1000);
-
-    };
-
-    that.showTotalScore = function(totalScore) {
-        $("#score").hide().html(totalScore).fadeIn();
-    };
-
-    that.showOffByInMeters = function(offByInMeters) {
-        $("#offByInMeters").html(offByInMeters);
-        $("#offBy").show().fadeOut(1000);
-    };
-
-    return that;
-};
-
-var view = createView(map);
 
 
