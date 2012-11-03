@@ -1,85 +1,29 @@
-nokia.Settings.set("appId", "_peU-uCkp-j8ovkzFGNU");
-nokia.Settings.set("authenticationToken", "gBoUkAMoxoqIWfxWA5DuMQ");
-
-if (typeof Number.prototype.toRad == 'undefined') {
-    Number.prototype.toRad = function() {
-        return this * Math.PI / 180;
-    }
-}
-
-var mapCenter = {
-    longitude: 13.3896145,
-    latitude: 52.5166648
-};
-
-var mapContainer = document.getElementById("mapContainer");
-
-var map = new nokia.maps.map.Display(mapContainer, {
-    center: [mapCenter.latitude, mapCenter.longitude],
-    zoomLevel: 12,
-    components:[]
-});
-
-var createView = function(map) {
-    var that = {};
-
-    that.displayPlaceMarker = function(position) {
-        var standardMarker = new nokia.maps.map.StandardMarker(position);
-        map.objects.add(standardMarker);
-
-        setTimeout(function() {
-            map.objects.remove(standardMarker);
-        }, 1000);
-
-    };
-
-    that.showCurrentItem =function(item) {
-        $("#name").hide().html(item.title).fadeIn();
-    }
-
-    that.showTotalScore = function(totalScore) {
-        $("#score").hide().html(totalScore).fadeIn();
-    };
-
-    that.showOffByInMeters = function(offByInMeters) {
-        $("#offByInMeters").html(offByInMeters);
-        $("#offBy").show().fadeOut(1000);
-    };
-
-    return that;
-};
-
-var view = createView(map);
-
-
-var createGame = function(items, view) {
-    var that, currentItem, score;
+var createGame = function(items, view, map) {
+    var that, currentItem, totalScore;
     that = {};
-    score = 0;
+    totalScore = 0;
 
     that.startGame = function() {
         currentItem = items[0];
         view.showCurrentItem(currentItem);
-        var TOUCH = nokia.maps.dom.Page.browser.touch, CLICK = TOUCH ? "tap" : "click";
-
-        map.addListener(CLICK, function (evt) {
-            var coord = map.pixelToGeo(evt.displayX, evt.displayY);
-            that.usersClicks(coord);
-
-        });
+        view.onMapClick(that.usersClicks);
     }
 
 
     that.usersClicks = function(coord) {
-        var offByInMeters = getOffByInMeters(coord);
+        var offByInMeters = getOffByInMeters(coord, currentItem.position);
         view.showOffByInMeters(offByInMeters);
-        var thisScore = scoreForClick(offByInMeters);
-        if (thisScore > 0) {
-            score = score + thisScore;
-            view.showTotalScore(score);
+        var score = scoreForClick(offByInMeters);
+        if (score > 0) {
+            totalScore = totalScore + score;
+            view.showTotalScore(totalScore);
         }
 
         view.displayPlaceMarker(currentItem.position);
+        nextQuestion();
+    };
+
+    var nextQuestion = function() {
         setTimeout(function() {
             currentItem = items[items.indexOf(currentItem) + 1];
             view.showCurrentItem(currentItem);
@@ -87,20 +31,18 @@ var createGame = function(items, view) {
         }, 1000);
     };
 
-
-
     var scoreForClick = function(offByInMeters) {
         return Math.max(Math.round(1500 - offByInMeters), 0);
 
     };
 
-    var getOffByInMeters = function(coord) {
+    var getOffByInMeters = function(coord, position) {
         var lat1, lat2, lon1, lon2;
 
         lat1 = coord.latitude;
         lon1 = coord.longitude;
-        lat2 = currentItem.position[0];
-        lon2 = currentItem.position[1];
+        lat2 = position[0];
+        lon2 = position[1];
 
         var R = 6371; // km
         var dLat = (lat2 - lat1).toRad();
@@ -114,7 +56,6 @@ var createGame = function(items, view) {
         var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         var d = R * c;
 
-
         return Math.round(d*1000);
 
     };
@@ -122,22 +63,9 @@ var createGame = function(items, view) {
     return that;
 }
 
-var game;
 
 
-$.getJSON('http://demo.places.nlp.nokia.com/places/v1/discover/explore?cat=landmark-attraction&at=' + mapCenter.latitude + '%2C' + mapCenter.longitude + '&tf=plain&pretty=y&size=50&app_id=demo_qCG24t50dHOwrLQ&app_code=NYKC67ShPhQwqaydGIW4yg', function(data) {
 
-    var items = [];
-
-    $.each(data.results.items, function(index, val) {
-        if (val.type == "urn:nlp-types:place")
-            items.push(val);
-    });
-
-    game = createGame(items, view);
-    game.startGame();
-
-});
 
 
 
