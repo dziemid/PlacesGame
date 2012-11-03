@@ -4,7 +4,7 @@ if (typeof Number.prototype.toRad == 'undefined') {
     }
 }
 
-var createGame = function(items, view, map) {
+var createGame = function(items, view) {
     var that, currentItem, totalScore;
     that = {};
     totalScore = 0;
